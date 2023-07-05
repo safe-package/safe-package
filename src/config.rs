@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 
 // Configuration struct, populated with serde_json and clap.
-#[derive(Parser)]
+#[derive(Parser, PartialEq)]
 #[command(author = "Mike Doyle", version, about = "Courtesy of [Arnica].io")]
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Config {
@@ -82,5 +82,42 @@ pub fn from_filename(fname: &str) -> Option<Config> {
     };
 }
 
+pub fn from_str(content: &str) -> Config {
+    let c = serde_json::from_str(content).unwrap();
+    c
+}
 
+#[cfg(test)]
+mod tests {
+    use super::*;
 
+    #[test]
+    fn test_from_str() {
+        // Define config json string
+        let config_string = r#"
+            {
+                "exe": "/usr/bin/pacman",
+                    "user": "nobody",
+                    "keep_env": [ "HOME", "PATH" ], 
+                "root_dir": "/cellblock/pip3",
+                "exe_args": [ ]
+            }
+        "#;
+
+        // Define config object
+        let config_object = Config{
+            exe: Some(String::from("/usr/bin/pacman")),
+            root_dir: Some(String::from("/cellblock/pip3")),
+            keep_env: Some([
+                String::from("HOME"), 
+                String::from("PATH")].to_vec()),
+            user: Some(String::from("nobody")),
+            exe_args: [].to_vec(),
+        };
+
+        // Build a config object from the config string
+        let config_from_str = from_str(&String::from(config_string));
+        // Assert equality ZZZ
+        assert_eq!(config_object, config_from_str);
+    }
+}
