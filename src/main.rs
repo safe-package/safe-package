@@ -19,6 +19,7 @@ fn main() {
         root_dir:  Some(String::from("/")),
         keep_env: Some([].to_vec()),
         user: None,
+        bind_mounts: [].to_vec(),
         exe_args: [].to_vec(),
     };
 

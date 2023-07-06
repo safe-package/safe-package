@@ -26,3 +26,4 @@ mount | grep $jail | cut -d' ' -f3 | while read m
 do
 	umount -R $m
 done
+

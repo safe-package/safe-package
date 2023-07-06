@@ -27,7 +27,11 @@ pub struct Config {
 
     /// Arguments to the package manager.
     pub exe_args: Vec<String>,
+
+    /// Directories to mount into the chroot.
+    pub bind_mounts: Vec<String>,
 }
+
 
 impl Config {
     pub fn overlay(mut self, other: Config) -> Self {
@@ -56,6 +60,8 @@ impl Config {
         Self {
             exe: other.exe.or(self.exe),
             root_dir: other.root_dir.or(self.root_dir),
+            // This is broke. Fix it as with keep_env
+            bind_mounts: self.bind_mounts,
             keep_env: self.keep_env,
             user: other.user.or(self.user),
             exe_args: self.exe_args,
@@ -100,6 +106,10 @@ mod tests {
                     "user": "nobody",
                     "keep_env": [ "HOME", "PATH" ], 
                 "root_dir": "/cellblock/pip3",
+                "bind_mounts" : [
+                    "/etc /etc ro,noexec",
+                    "/bin /bin"
+                ],
                 "exe_args": [ ]
             }
         "#;
@@ -112,6 +122,10 @@ mod tests {
                 String::from("HOME"), 
                 String::from("PATH")].to_vec()),
             user: Some(String::from("nobody")),
+            bind_mounts: [
+                String::from("/etc /etc ro,noexec"),
+                String::from("/bin /bin"),
+            ].to_vec(),
             exe_args: [].to_vec(),
         };
 

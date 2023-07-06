@@ -35,7 +35,7 @@ done
 
 # Everything else can be bind-mounted and unmounted as usual. We'll unmount
 # recursively to avoid unnessary errors.
-cat config.json | \
+cat extras/config.json | \
 	grep bind_mount | \
 	cut -d'"' -f6,10,14 | \
 	sed 's/"/ /g' | \
@@ -55,4 +55,5 @@ cat config.json | \
 			mount --bind -o "$opts" $path ${jail}${mount}
 		fi
 	done
+
 
