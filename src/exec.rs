@@ -1,7 +1,6 @@
-use nix::unistd::{execv, setuid};
+use nix::unistd::{execv, setuid, fork, ForkResult, User};
 use std::ffi::CString;
-use std::process::exit;
-use nix::unistd::User;
+use nix::sys::wait::waitpid;
 
 //use std::env;
 
@@ -32,13 +31,19 @@ pub fn exec_pm(path: &str, args: Vec<std::string::String>) {
     for arg in args {
         v.push(CString::new(arg).unwrap());
     }
-    match execv(p, &v) {
-        Err(e) => {
-            eprintln!("Failed to execute {path}: {e}");
-        },
-        Ok(_) => eprintln!("The impossible has happened."),
-    };
 
-    exit(1);
-
+    match unsafe{fork()} {
+        Ok(ForkResult::Parent { child, .. }) => {
+            waitpid(child, None).unwrap();
+        }
+        Ok(ForkResult::Child) => {
+            match execv(p, &v) {
+                Err(e) => {
+                    eprintln!("Failed to execute {path}: {e}");
+                },
+                Ok(_) => eprintln!("The impossible has happened."),
+            };
+        }
+        Err(_) => panic!("Fork failed"),
+    }
 }

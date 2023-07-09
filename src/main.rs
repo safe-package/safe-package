@@ -13,7 +13,17 @@ mod chroot;         // look in chroot.rs
 
 fn main() {
 
-    // Program defaults
+    // Strategy: 
+    // 0. Gather configuration from various sources.
+    // 1. Clear the environment variables.
+    // 2. Isolate the filesystem.
+    // 3. Drop privileges.
+    // 4. Execute the package manager.
+    // 5. Clean up.
+
+
+    // 0. Gather configuration from various sources.
+    // First, here are our defaults.
     let mut config = config::Config{
         exe: None,
         root_dir:  Some(String::from("/")),
@@ -23,6 +33,7 @@ fn main() {
         exe_args: [].to_vec(),
     };
 
+    // Next we look in the system-specific config in /etc.
     let etc_filename = String::from("/etc/safe-package/config.json");
     config = match config::from_filename(&etc_filename) {
         None => config,
@@ -30,6 +41,7 @@ fn main() {
     };
 
 
+    // Next we look in the user's .safe-package directory.
     let user_filename = match env::var("HOME") {
         // Most unixen
         Ok(val) => format!("{val}/.safe-package/config.json"),
@@ -41,16 +53,21 @@ fn main() {
         Some(c) => config.overlay(c),
     };
 
+    // Next, let's see if the current working directory has config.
     let cwd_filename = String::from("./.safe-package/config.json");
     config = match config::from_filename(&cwd_filename) {
         None => config,
         Some(c) => config.overlay(c),
     };
 
+    // Finally, let's check the command line arguments.
     config = config.overlay(config::Config::parse());
 
     debug_println!("{:?}", config);
 
+
+
+    // 1. Clear the environment variables.
     match config.keep_env {
         None => { 
             environment::clear_env(&[ ].to_vec());
@@ -60,26 +77,32 @@ fn main() {
         },
     }
 
-    match config.root_dir {
-        None => { }, // Nothing to do.
-        Some(d) => {
-            if d != (String::from("/")) {
-                match chroot::chroot(&d) {
-                    Ok(()) => { },
-                    Err(e) => {
-                        eprintln!("{}", e);
-                        exit(1);
-                    },
-                }
+    // 2. Isolate the filesystem.
+    if let Some(d) = config.root_dir {
+
+        // Do we have bind mount rules? If so, let's
+        // process them.
+        chroot::bind_mounts(&config.bind_mounts);
+
+        if d != (String::from("/")) {
+            match chroot::chroot(&d) {
+                Ok(()) => { },
+                Err(e) => {
+                    eprintln!("{}", e);
+                    exit(1);
+                },
             }
-        },
+        }
     }
 
+    // 3. Drop privileges
     match config.user {
         None => {
-                if unistd::geteuid().is_root() {
-                    println!("Warning! Running as root. I hope you know what you're doing.");
-                }
+            if unistd::geteuid().is_root() {
+                println!("{} {}", 
+                         "Warning! Running as root.", 
+                         "I hope you know what you're doing.");
+            }
         }, 
         Some(user) => {
             match exec::drop_privs(&user) {
@@ -94,6 +117,7 @@ fn main() {
         },
     }
 
+    // 4. Execute the package manager.
     match config.exe {
         Some(e) => { 
            exec::exec_pm(&e, config.exe_args.to_vec());
@@ -108,4 +132,8 @@ fn main() {
             }
         },
     }
+
+    // 5. Clean up.
+    // If there are bind mounts configured, we should clean those up.
+    chroot::unbind_mounts(&config.bind_mounts);
 }
