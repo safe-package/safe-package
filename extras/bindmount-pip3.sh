@@ -35,15 +35,17 @@ done
 
 # Everything else can be bind-mounted and unmounted as usual. We'll unmount
 # recursively to avoid unnessary errors.
-cat extras/config.json | \
-	grep bind_mount | \
-	cut -d'"' -f6,10,14 | \
-	sed 's/"/ /g' | \
+#		"local: /bin mountpoint: /bin opts: ro",
+
+cat $HOME/.safe-package/config.json | \
+	grep mountpoint | \
+	cut -d'"' -f2 | \
+	cut -d' ' -f2,4,6 | \
 	while read path mount opts
 	do
 		if [ -z "$path" ]
 		then
-			echo "empty line, continuing"
+			"empty line, continuing"
 			continue
 		fi
 

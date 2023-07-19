@@ -1,8 +1,7 @@
 use std::env;
 use clap::Parser;
-use std::process::exit;
 use debug_print::debug_println;
-use nix::unistd;
+use std::process::exit;
 
 
 
@@ -63,7 +62,7 @@ fn main() {
     // Finally, let's check the command line arguments.
     config = config.overlay(config::Config::parse());
 
-    debug_println!("{:?}", config);
+    // debug_println!("{:?}", config);
 
 
 
@@ -77,63 +76,37 @@ fn main() {
         },
     }
 
-    // 2. Isolate the filesystem.
-    if let Some(d) = config.root_dir {
+    let user = match config.user {
+        Some(u) => u,
+        None => String::from(""),
+    };
 
-        // Do we have bind mount rules? If so, let's
-        // process them.
-        chroot::bind_mounts(&config.bind_mounts);
+    let root = match config.root_dir {
+        Some(dir) => dir,
+        None => String::from("/"),
+    };
 
-        if d != (String::from("/")) {
-            match chroot::chroot(&d) {
-                Ok(()) => { },
-                Err(e) => {
-                    eprintln!("{}", e);
-                    exit(1);
-                },
-            }
-        }
+    if root != String::from("/") {
+        chroot::bind_mounts(&config.bind_mounts, &root);
     }
 
-    // 3. Drop privileges
-    match config.user {
-        None => {
-            if unistd::geteuid().is_root() {
-                println!("{} {}", 
-                         "Warning! Running as root.", 
-                         "I hope you know what you're doing.");
-            }
-        }, 
-        Some(user) => {
-            match exec::drop_privs(&user) {
-                Ok(()) => { },
-                Err(e) => {
-                    eprintln!("Couldn't drop privileges to user {}: {}",
-                        user, e);
-                    exit(1);
-
-                },
-            }
-        },
-    }
+    exit(0);
 
     // 4. Execute the package manager.
     match config.exe {
         Some(e) => { 
-           exec::exec_pm(&e, config.exe_args.to_vec());
+           exec::exec_pm(&e, config.exe_args.to_vec(), &user, &root);
         },
         None => {
             if config.exe_args.len() > 0 {
                 let exe = config.exe_args[0].clone();
-                config.exe_args = config.exe_args[1..].to_vec();
-                exec::exec_pm(&exe, config.exe_args.to_vec());
+                if config.exe_args.len() > 1 {
+                    config.exe_args = config.exe_args[1..].to_vec();
+                }
+                exec::exec_pm(&exe, config.exe_args.to_vec(), &user, &root);
             } else {
                 panic!("Nothing to execute!");
             }
         },
     }
-
-    // 5. Clean up.
-    // If there are bind mounts configured, we should clean those up.
-    chroot::unbind_mounts(&config.bind_mounts);
 }

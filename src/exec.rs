@@ -1,28 +1,29 @@
 use nix::unistd::{execv, setuid, fork, ForkResult, User};
 use std::ffi::CString;
 use nix::sys::wait::waitpid;
+use std::process::exit;
+use crate::chroot;
 
 //use std::env;
 
 pub fn drop_privs(user: &str) -> Result<(),&'static str> {
-    match User::from_name(user) {
-        Ok(o) => { 
-            match o {
-                None => Err("user not found"),
-                Some(u) => {
-                    match setuid(u.uid) {
-                        Err(_e) => Err("Failed to setuid. Are you root?"),
-                        _ => Ok(()),
-                    }
-                },
-            }
-        },
-        Err(_) => Err("Failed to setuid. Are you root?"),
+    if user == "" {
+        return Ok(())
+    }
+
+    if let Ok(Some(user_obj)) = User::from_name(user) {
+        if let Ok(_) = setuid(user_obj.uid) {
+            Ok(())
+        } else {
+            Err("failed to setuid. Are you root?")
+        }
+    } else {
+        Err("user not found")
     }
 }
 
     
-pub fn exec_pm(path: &str, args: Vec<std::string::String>) {
+pub fn exec_pm(path: &str, args: Vec<std::string::String>, user: &str, d: &str) {
         
     let p = &CString::new(path).unwrap();
     let mut v = Vec::new();
@@ -35,8 +36,27 @@ pub fn exec_pm(path: &str, args: Vec<std::string::String>) {
     match unsafe{fork()} {
         Ok(ForkResult::Parent { child, .. }) => {
             waitpid(child, None).unwrap();
+            if ! chroot::unbind_mounts(&[].to_vec()) {
+                eprintln!("Cleanup failed.");
+            }
         }
+
         Ok(ForkResult::Child) => {
+
+            if d != (String::from("/")) {
+                match chroot::chroot(&d){
+                    Ok(()) => { },
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        exit(1);
+                    },
+                }
+            }
+
+            if let Err(e) = drop_privs(user) {
+                panic!("{}", e);
+            }
+
             match execv(p, &v) {
                 Err(e) => {
                     eprintln!("Failed to execute {path}: {e}");
@@ -44,6 +64,6 @@ pub fn exec_pm(path: &str, args: Vec<std::string::String>) {
                 Ok(_) => eprintln!("The impossible has happened."),
             };
         }
-        Err(_) => panic!("Fork failed"),
+        Err(_) => {panic!("Fork failed")} ,
     }
 }

@@ -1,2 +1,2 @@
 echo Launching HeckPoint...
-./heckpoint &
+/home/mike/bin/heckpoint &

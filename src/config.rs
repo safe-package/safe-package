@@ -2,6 +2,9 @@ use std::{fs::File, io::BufReader};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use debug_print::debug_println;
+
+
 
 // Configuration struct, populated with serde_json and clap.
 #[derive(Parser, PartialEq)]
@@ -29,6 +32,7 @@ pub struct Config {
     pub exe_args: Vec<String>,
 
     /// Directories to mount into the chroot.
+    #[arg(last=true)]
     pub bind_mounts: Vec<String>,
 }
 
@@ -57,6 +61,9 @@ impl Config {
 
         self.exe_args.extend(other.exe_args.into_iter());
 
+        self.bind_mounts.extend(other.bind_mounts.into_iter());
+        //debug_println!("bind mounts in overlay: {:?}", self.bind_mounts);
+
         Self {
             exe: other.exe.or(self.exe),
             root_dir: other.root_dir.or(self.root_dir),
@@ -72,19 +79,21 @@ impl Config {
 
 
 pub fn from_filename(fname: &str) -> Option<Config> {
-     match File::open(fname) {
-        Err(_) => return None,
-        Ok(f) => {
-            let reader = BufReader::new(f);
-            match serde_json::from_reader(reader) {
-                Err(e) => {
-                    panic!("Error parsing {}: {}", fname, e);
-                }
-                Ok(config) => {
-                    return Some(config);
-                }
-            };
-        },
+    debug_println!("Reading config from {fname}");
+    match File::open(fname) {
+       Err(_) => return None,
+       Ok(f) => {
+           let reader = BufReader::new(f);
+           match serde_json::from_reader(reader) {
+               Err(e) => {
+                   panic!("Error parsing {}: {}", fname, e);
+               }
+               Ok(config) => {
+                   debug_println!("config in from_filename: {:?}", config);
+                   return Some(config);
+               }
+           };
+       },
     };
 }
 
