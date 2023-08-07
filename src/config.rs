@@ -97,14 +97,14 @@ pub fn from_filename(fname: &str) -> Option<Config> {
     };
 }
 
-pub fn from_str(content: &str) -> Config {
-    let c = serde_json::from_str(content).unwrap();
-    c
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn from_str(content: &str) -> Config {
+        let c = serde_json::from_str(content).unwrap();
+        c
+    }
 
     #[test]
     fn test_from_str() {

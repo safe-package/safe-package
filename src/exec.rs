@@ -23,7 +23,12 @@ pub fn drop_privs(user: &str) -> Result<(),&'static str> {
 }
 
     
-pub fn exec_pm(path: &str, args: Vec<std::string::String>, user: &str, d: &str) {
+pub fn exec_pm(path: &str, 
+               args: Vec<std::string::String>, 
+               user: &str, 
+               d: &str,
+               bind_mount_rules: &Vec<String>) {
+
         
     let p = &CString::new(path).unwrap();
     let mut v = Vec::new();
@@ -36,7 +41,7 @@ pub fn exec_pm(path: &str, args: Vec<std::string::String>, user: &str, d: &str) 
     match unsafe{fork()} {
         Ok(ForkResult::Parent { child, .. }) => {
             waitpid(child, None).unwrap();
-            if ! chroot::unbind_mounts(&[].to_vec()) {
+            if ! chroot::unbind_mounts(bind_mount_rules, d) {
                 eprintln!("Cleanup failed.");
             }
         }

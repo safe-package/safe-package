@@ -17,4 +17,4 @@ clap = { version = "4.3.11", features = ["derive"] }
 debug_print = "1.0.0"
 subprocess = "0.2.9"
 regex = "1.9.1"
-sys-mount = "2.0.2"
+libmount = "0.1.15"

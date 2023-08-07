@@ -1,8 +1,5 @@
 use std::env;
 use clap::Parser;
-use debug_print::debug_println;
-use std::process::exit;
-
 
 
 mod exec;           // look in exec.rs
@@ -90,12 +87,15 @@ fn main() {
         chroot::bind_mounts(&config.bind_mounts, &root);
     }
 
-    exit(0);
 
     // 4. Execute the package manager.
     match config.exe {
         Some(e) => { 
-           exec::exec_pm(&e, config.exe_args.to_vec(), &user, &root);
+           exec::exec_pm(&e, 
+                         config.exe_args.to_vec(), 
+                         &user, 
+                         &root, 
+                         &config.bind_mounts);
         },
         None => {
             if config.exe_args.len() > 0 {
@@ -103,7 +103,11 @@ fn main() {
                 if config.exe_args.len() > 1 {
                     config.exe_args = config.exe_args[1..].to_vec();
                 }
-                exec::exec_pm(&exe, config.exe_args.to_vec(), &user, &root);
+                exec::exec_pm(&exe, 
+                              config.exe_args.to_vec(), 
+                              &user, 
+                              &root,
+                              &config.bind_mounts);
             } else {
                 panic!("Nothing to execute!");
             }
