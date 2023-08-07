@@ -1,2 +1,2 @@
 echo Launching HeckPoint...
-./heckpoint &
+sudo /home/mike/bin/heckpoint &

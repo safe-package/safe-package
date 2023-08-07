@@ -1,0 +1,19 @@
+{
+	"exe": "/usr/bin/pacman",
+       	"user": "nobody",
+       	"keep_env": [ "HOME", "PATH" ], 
+	"root_dir": "/cellblock/pip3",
+	"exe_args": [ ],
+	"bind_mount": { "local": "/bin", "mountpoint": "/bin", "opts": "ro" },
+	"bind_mount": { "local": "/etc", "mountpoint": "/etc", "opts": "ro,noexec" },
+	"bind_mount": { "local": "/lib", "mountpoint": "/lib", "opts": "ro" },
+	"bind_mount": { "local": "/usr/bin", "mountpoint": "/usr/bin", "opts": "ro" },
+	"bind_mount": { "local": "/usr/lib", "mountpoint": "/usr/lib", "opts": "ro" },
+	"bind_mount": { "local": "/usr/include/python3.10", "mountpoint": "/usr/include/python3.10", "opts": "ro" },
+	"bind_mount": { "local": "/usr/libexec", "mountpoint": "/usr/libexec", "opts": "ro" },
+	"bind_mount": { "local": "/usr/share", "mountpoint": "/usr/share", "opts": "ro" },
+	"bind_mount": { "local": "/usr/src", "mountpoint": "/usr/src", "opts": "ro,noexec" },
+	"bind_mount": { "local": "/usr/local/lib/python3.10/dist-packages", "mountpoint": "/usr/local/lib/python3.10/dist-packages", "opts": "rw" },
+	"bind_mount": { "local": "/root/.cache/pip", "mountpoint": "/root/.cache/pip", "opts": "rw" }
+
+}
